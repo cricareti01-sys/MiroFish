@@ -19,6 +19,8 @@ from ..utils.zep_paging import fetch_all_nodes, fetch_all_edges
 from .text_processor import TextProcessor
 from ..utils.locale import t, get_locale, set_locale
 
+MAX_SOURCE_TARGETS_PER_EDGE = 10
+
 
 @dataclass
 class GraphInfo:
@@ -272,7 +274,7 @@ class GraphBuilderService:
             
             # 构建source_targets
             source_targets = []
-            for st in edge_def.get("source_targets", []):
+            for st in edge_def.get("source_targets", [])[:MAX_SOURCE_TARGETS_PER_EDGE]:
                 source_targets.append(
                     EntityEdgeSourceTarget(
                         source=st.get("source", "Entity"),

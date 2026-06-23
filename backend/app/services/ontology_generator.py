@@ -12,6 +12,8 @@ from ..utils.locale import get_language_instruction
 
 logger = logging.getLogger(__name__)
 
+MAX_SOURCE_TARGETS_PER_EDGE = 10
+
 
 def _to_pascal_case(name: str) -> str:
     """将任意格式的名称转换为 PascalCase（如 'works_for' -> 'WorksFor', 'person' -> 'Person'）"""
@@ -207,7 +209,7 @@ class OntologyGenerator:
         )
         
         lang_instruction = get_language_instruction()
-        system_prompt = f"{ONTOLOGY_SYSTEM_PROMPT}\n\n{lang_instruction}\nIMPORTANT: Entity type names MUST be in English PascalCase (e.g., 'PersonEntity', 'MediaOrganization'). Relationship type names MUST be in English UPPER_SNAKE_CASE (e.g., 'WORKS_FOR'). Attribute names MUST be in English snake_case. Only description fields and analysis_summary should use the specified language above. Keep all descriptions concise: one short sentence each, with at most 2 examples per entity type."
+        system_prompt = f"{ONTOLOGY_SYSTEM_PROMPT}\n\n{lang_instruction}\nIMPORTANT: Entity type names MUST be in English PascalCase (e.g., 'PersonEntity', 'MediaOrganization'). Relationship type names MUST be in English UPPER_SNAKE_CASE (e.g., 'WORKS_FOR'). Attribute names MUST be in English snake_case. Only description fields and analysis_summary should use the specified language above. Keep all descriptions concise: one short sentence each, with at most 2 examples per entity type. Each edge type source_targets list MUST contain at most 10 source/target pairs."
         messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_message}
@@ -320,6 +322,12 @@ class OntologyGenerator:
                     st["target"] = entity_name_map[st["target"]]
             if "source_targets" not in edge:
                 edge["source_targets"] = []
+            if len(edge["source_targets"]) > MAX_SOURCE_TARGETS_PER_EDGE:
+                logger.warning(
+                    f"Edge type '{edge.get('name', '')}' source_targets truncated "
+                    f"from {len(edge['source_targets'])} to {MAX_SOURCE_TARGETS_PER_EDGE}"
+                )
+                edge["source_targets"] = edge["source_targets"][:MAX_SOURCE_TARGETS_PER_EDGE]
             if "attributes" not in edge:
                 edge["attributes"] = []
             if len(edge.get("description", "")) > 100:
